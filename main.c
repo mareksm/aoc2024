@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #define array_len(a) ((&a)[1] - a)
 
@@ -157,6 +158,198 @@ int main(int argc, char **argv)
     fclose(file);
 
     printf("DAY 2 (b): %d\n", safe_level);
+
+    /* day 3 */
+
+    {
+        int inmul = 0, diga = 0, digb = 0;
+        int c, *digp = &diga;
+        int day_3_a = 0;
+        int mul_state = 0;
+
+        file = fopen("input_d3.txt", "r");
+        while ((c = fgetc(file)) != EOF)
+        {
+            if (inmul)
+            {
+                if (isdigit(c) || c == ',' || c == ')')
+                {
+                    if (c == ',')
+                    {
+                        digp = &digb;
+                    }
+                    else if (c == ')')
+                    {
+                        day_3_a += diga * digb;
+                        inmul = 0;
+                        diga = digb = 0;
+                        digp = &diga;
+                    }
+                    else
+                    {
+                        *digp = *digp * 10 + (c - '0');
+                    }
+                    continue;
+                }
+                else
+                {
+                    inmul = 0;
+                    diga = digb = 0;
+                    digp = &diga;
+                }
+            }
+
+            if (mul_state == 0 && c == 'm')
+            {
+                mul_state = 1;
+            }
+            else if (mul_state == 1 && c == 'u')
+            {
+                mul_state = 2;
+            }
+            else if (mul_state == 2 && c == 'l')
+            {
+                mul_state = 3;
+            }
+            else if (mul_state == 3 && c == '(')
+            {
+                inmul = 1;
+                mul_state = 0;
+            }
+            else
+            {
+                mul_state = 0;
+            }
+        }
+
+        fclose(file);
+        printf("DAY 3 (a): %d\n", day_3_a);
+    }
+
+    {
+        int inmul = 0, diga = 0, digb = 0, indo = -1, indont = 0;
+        int c, *digp = &diga;
+        int day_3_b = 0;
+        int mul_state = 0, do_state = 0, dont_state = 0;
+
+        file = fopen("input_d3.txt", "r");
+        while ((c = fgetc(file)) != EOF)
+        {
+            if (inmul)
+            {
+                if (isdigit(c) || c == ',' || c == ')')
+                {
+                    if (c == ',')
+                    {
+                        digp = &digb;
+                    }
+                    else if (c == ')')
+                    {
+                        if (!indont || indo == -1)
+                            day_3_b += diga * digb;
+
+                        inmul = 0;
+                        diga = digb = 0;
+                        digp = &diga;
+                    }
+                    else
+                    {
+                        *digp = *digp * 10 + (c - '0');
+                    }
+                    continue;
+                }
+                else
+                {
+                    inmul = 0;
+                    diga = digb = 0;
+                    digp = &diga;
+                }
+            }
+
+            if (mul_state == 0 && c == 'm')
+            {
+                mul_state = 1;
+            }
+            else if (mul_state == 1 && c == 'u')
+            {
+                mul_state = 2;
+            }
+            else if (mul_state == 2 && c == 'l')
+            {
+                mul_state = 3;
+            }
+            else if (mul_state == 3 && c == '(')
+            {
+                inmul = 1;
+                mul_state = 0;
+            }
+            else
+            {
+                mul_state = 0;
+            }
+
+            if (do_state == 0 && c == 'd')
+            {
+                do_state = 1;
+            }
+            else if (do_state == 1 && c == 'o')
+            {
+                do_state = 2;
+            }
+            else if (do_state == 2 && c == '(')
+            {
+                do_state = 3;
+            }
+            else if (do_state == 3 && c == ')')
+            {
+                indo = 1;
+                indont = 0;
+                do_state = 0;
+            }
+            else
+            {
+                do_state = 0;
+            }
+
+            if (dont_state == 0 && c == 'd')
+            {
+                dont_state = 1;
+            }
+            else if (dont_state == 1 && c == 'o')
+            {
+                dont_state = 2;
+            }
+            else if (dont_state == 2 && c == 'n')
+            {
+                dont_state = 3;
+            }
+            else if (dont_state == 3 && c == '\'')
+            {
+                dont_state = 4;
+            }
+            else if (dont_state == 4 && c == 't')
+            {
+                dont_state = 5;
+            }
+            else if (dont_state == 5 && c == '(')
+            {
+                dont_state = 6;
+            }
+            else if (dont_state == 6 && c == ')')
+            {
+                indont = 1;
+                indo = 0;
+                dont_state = 0;
+            }
+            else
+            {
+                dont_state = 0;
+            }
+        }
+
+        fclose(file);
+        printf("DAY 3 (b): %d\n", day_3_b);
+    }
 
     return 0;
 }
