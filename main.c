@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -74,6 +75,69 @@ int unsafe(int *v, int arrsz)
     }
 
     return -1;
+}
+
+int search_pattern2(const char *a, int asz, const char *pt, int ptsz)
+{
+    int count = 0;
+    const char *ptr = a;
+    const char *end = ptr + asz;
+
+    if (asz < ptsz)
+        return 0;
+
+    while (ptr < end)
+    {
+        const char *found = memmem(ptr, end - ptr, pt, ptsz);
+        if (!found)
+            break;
+        count++;
+        ptr = found + ptsz;
+    }
+
+    return count;
+}
+
+int search_pattern(const char *a, int asz, const char *pt, int ptsz)
+{
+    int count = 0;
+    const char *ptr = a;
+    const char *end = ptr + asz;
+
+    while ((ptr = strstr(ptr, pt)))
+    {
+        count++;
+        ptr += ptsz;
+    }
+
+    return count;
+}
+
+int search_pattern3(int row, int col, int n, char c[][n])
+{
+    char x[3][3];
+
+    for (int i = row; i < row + 3; i++)
+    {
+        for (int j = col; j < col + 3; j++)
+        {
+            if (i < n && j < n)
+            {
+                x[i - row][j - col] = c[i][j];
+            }
+        }
+    }
+
+    if (x[1][1] != 'A')
+        return 0;
+
+    if (((x[0][0] == 'M' && x[2][2] == 'S') || (x[0][0] == 'S' && x[2][2] == 'M')) &&
+        ((x[0][2] == 'M' && x[2][0] == 'S') || (x[0][2] == 'S' && x[2][0] == 'M')))
+    {
+        return 1;
+    }
+
+    return 0;
 }
 
 int main(int argc, char **argv)
@@ -349,6 +413,116 @@ int main(int argc, char **argv)
 
         fclose(file);
         printf("DAY 3 (b): %d\n", day_3_b);
+    }
+
+    /* day 4 */
+
+    {
+        int day_4_a = 0, day_4_b = 0;
+        int i = 0;
+#define mx_arr_sz 140
+        char line[mx_arr_sz + 2];
+        char mx[mx_arr_sz][mx_arr_sz];
+        file = fopen("input_d4.txt", "r");
+        while (fgets(line, sizeof(line), file))
+        {
+            day_4_a += search_pattern(line, mx_arr_sz, "XMAS", 4);
+            day_4_a += search_pattern(line, mx_arr_sz, "SAMX", 4);
+
+            memcpy(mx[i++], line, mx_arr_sz);
+        }
+        fclose(file);
+
+        // columns
+
+        for (int j = 0; j < mx_arr_sz; j++)
+        {
+            char t[mx_arr_sz << 2];
+            int tl = 0;
+            for (int k = 0; k < mx_arr_sz; k++)
+            {
+                t[tl++] = mx[k][j];
+            }
+            t[tl] = 0;
+
+            day_4_a += search_pattern(t, tl, "XMAS", 4);
+            day_4_a += search_pattern(t, tl, "SAMX", 4);
+        }
+
+        // left-top->right-bottom
+
+        for (int j = 0; j < mx_arr_sz; j++)
+        {
+            char t[mx_arr_sz << 2];
+            int tl = 0;
+            for (int k = 0; k <= j; k++)
+            {
+                t[tl++] = mx[k][j - k];
+            }
+            t[tl] = 0;
+
+            day_4_a += search_pattern(t, tl, "XMAS", 4);
+            day_4_a += search_pattern(t, tl, "SAMX", 4);
+        }
+
+        for (int j = 1; j < mx_arr_sz; j++)
+        {
+            char t[mx_arr_sz << 2];
+            int tl = 0;
+            for (int k = 0; k < mx_arr_sz - j; k++)
+            {
+                t[tl++] = mx[j + k][mx_arr_sz - 1 - k];
+            }
+            t[tl] = 0;
+
+            day_4_a += search_pattern(t, tl, "XMAS", 4);
+            day_4_a += search_pattern(t, tl, "SAMX", 4);
+        }
+
+        // right-top->left-bottom
+
+        for (int j = 0; j < mx_arr_sz; j++)
+        {
+            char t[mx_arr_sz << 2];
+            int tl = 0;
+            for (int k = 0; k <= j; k++)
+            {
+                t[tl++] = mx[k][mx_arr_sz - 1 - j + k];
+            }
+            t[tl] = 0;
+
+            day_4_a += search_pattern(t, tl, "XMAS", 4);
+            day_4_a += search_pattern(t, tl, "SAMX", 4);
+        }
+
+        for (int j = 1; j < mx_arr_sz; j++)
+        {
+            char t[mx_arr_sz << 2];
+            int tl = 0;
+            for (int k = 0; k < mx_arr_sz - j; k++)
+            {
+                t[tl++] = mx[j + k][k];
+            }
+            t[tl] = 0;
+
+            day_4_a += search_pattern(t, tl, "XMAS", 4);
+            day_4_a += search_pattern(t, tl, "SAMX", 4);
+        }
+
+        printf("DAY 4 (a): %d\n", day_4_a);
+
+        for (int j = 0; j <= mx_arr_sz - 3; j++)
+        {
+            for (int k = 0; k <= mx_arr_sz - 3; k++)
+            {
+                if (search_pattern3(j, k, mx_arr_sz, mx))
+                {
+                    day_4_b++;
+                }
+            }
+        }
+
+        printf("DAY 4 (b): %d\n", day_4_b);
     }
 
     return 0;
