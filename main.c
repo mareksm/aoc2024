@@ -525,5 +525,135 @@ int main(int argc, char **argv)
         printf("DAY 4 (b): %d\n", day_4_b);
     }
 
+    /* day 5 */
+    {
+        char line[256];
+        char *p;
+#define por_len 1176
+        struct day5
+        {
+            int page[2];
+        } por[por_len];
+        int por_ln = 0;
+        int day_5_a = 0, day_5_b = 0;
+
+        int in_rule_forw(int a, int b)
+        {
+            for (int j = 0; j < por_ln; j++)
+                if (por[j].page[0] == a && por[j].page[1] == b)
+                    return 1;
+            return 0;
+        };
+
+        int in_rule_back(int a, int b)
+        {
+            for (int j = 0; j < por_ln; j++)
+                if (por[j].page[1] == a && por[j].page[0] == b)
+                    return 1;
+            return 0;
+        };
+
+        int in_rule(int *pages, int pages_ln)
+        {
+            int forw_err = 0, back_err = 0;
+            if (pages_ln == 0)
+                return -1;
+
+            for (int i = 0; i < pages_ln; i++)
+            {
+                for (int j = i + 1; j < pages_ln; j++)
+                {
+                    if (!in_rule_forw(pages[i], pages[j]))
+                    {
+                        forw_err++;
+                        break;
+                    }
+                }
+
+                for (int j = i - 1; j >= 0; --j)
+                {
+                    if (!in_rule_back(pages[i], pages[j]))
+                    {
+                        back_err++;
+                        break;
+                    }
+                }
+            }
+
+            if (!forw_err && !back_err)
+            {
+                return pages[pages_ln / 2];
+            }
+            return -1;
+        };
+
+        file = fopen("input_d5.txt", "r");
+        while (fgets(line, sizeof(line), file))
+        {
+            if ((p = strchr(line, '|')))
+            {
+                *p++ = 0;
+                por[por_ln].page[0] = strtol(line, 0, 10);
+                por[por_ln++].page[1] = strtol(p, 0, 10);
+            }
+            else if (strchr(line, ','))
+            {
+                char *end;
+                int pages[32];
+                int pages_ln = 0;
+                p = line;
+                while (*p)
+                {
+                    int num = strtol(p, &end, 10);
+                    if (p != end)
+                    {
+                        pages[pages_ln++] = num;
+                        p = end;
+                    }
+                    else
+                        p++;
+                }
+
+                int in = in_rule(pages, pages_ln);
+                if (in != -1)
+                {
+                    day_5_a += in;
+                }
+                else
+                {
+                    int offs = pages_ln;
+
+                    do
+                    {
+                        for (int i = 0; i < pages_ln - 1; i++)
+                        {
+                            for (int j = i + 1; j < pages_ln; j++)
+                            {
+                                if (!in_rule_forw(pages[i], pages[j]))
+                                {
+                                    int t = pages[i];
+                                    pages[i] = pages[i + 1];
+                                    pages[i + 1] = t;
+                                    break;
+                                }
+                            }
+                        }
+
+                    } while (--offs > 0);
+
+                    in = in_rule(pages, pages_ln);
+                    if (in != -1)
+                    {
+                        day_5_b += in;
+                    }
+                }
+            }
+        }
+        fclose(file);
+
+        printf("DAY 5 (a): %d\n", day_5_a);
+        printf("DAY 5 (b): %d\n", day_5_b);
+    }
+
     return 0;
 }
