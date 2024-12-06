@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <omp.h>
+#include <stdatomic.h>
 
 #define array_len(a) ((&a)[1] - a)
 
@@ -653,6 +655,175 @@ int main(int argc, char **argv)
 
         printf("DAY 5 (a): %d\n", day_5_a);
         printf("DAY 5 (b): %d\n", day_5_b);
+    }
+
+    /* day 6 */
+    {
+        char line[256], *p;
+        int i = 0, obstcount = 0;
+#define guard_map_sz 130
+        char mx[guard_map_sz][guard_map_sz];
+        int x = 0, y = 0; /* col , row */
+        file = fopen("input_d6t.txt", "r");
+        while (fgets(line, sizeof(line), file))
+        {
+            p = strchr(line, '^');
+            if (p)
+            {
+                x = p - line;
+                y = i;
+            }
+            memcpy(mx[i++], line, strlen(line));
+
+            for (int j = 0; line[j] != 0; j++)
+                if (line[j] == '#')
+                    obstcount++;
+        }
+        fclose(file);
+
+        int max_x = i, max_y = i;
+
+        struct visited
+        {
+            int x;
+            int y;
+        } vis[max_x * max_y];
+
+        int vis_ln = 0;
+
+        void add_pos(int xx, int yy)
+        {
+            for (int k = 0; k < vis_ln; k++)
+            {
+                if (vis[k].x == xx && vis[k].y == yy)
+                    return;
+            }
+
+            vis[vis_ln].x = xx;
+            vis[vis_ln].y = yy;
+            vis_ln++;
+        };
+
+        int walk(char(*arr)[guard_map_sz][guard_map_sz], int max_xx, int max_yy, int xx, int yy)
+        {
+            char cont = 1, dir = 0; /* up */
+            int steps = 0;
+            int max_steps = max_xx * max_yy - 2 - obstcount;
+
+            memset(vis, 0, sizeof(vis));
+            vis_ln = 0;
+
+            do
+            {
+                if (steps++ > max_steps)
+                    return -1;
+
+                switch (dir)
+                {
+                case 0: /* up */
+                    if (yy < 0)
+                    {
+                        cont = 0;
+                    }
+                    if ((*arr)[yy][xx] == '#')
+                    {
+                        dir = 1;
+                        yy++;
+                    }
+                    else
+                    {
+                        add_pos(xx, yy);
+                        yy--;
+                    }
+                    break;
+                case 1: /* right */
+                    if (xx == max_xx)
+                    {
+                        cont = 0;
+                    }
+                    else if ((*arr)[yy][xx] == '#')
+                    {
+                        dir = 2;
+                        xx--;
+                    }
+                    else
+                    {
+                        add_pos(xx, yy);
+                        xx++;
+                    }
+                    break;
+                case 2: /* down */
+                    if (yy == max_yy)
+                    {
+                        cont = 0;
+                    }
+                    else if ((*arr)[yy][xx] == '#')
+                    {
+                        dir = 3;
+                        yy--;
+                    }
+                    else
+                    {
+                        add_pos(xx, yy);
+                        yy++;
+                    }
+                    break;
+                case 3: /* left */
+                    if (xx < 0)
+                    {
+                        cont = 0;
+                    }
+                    else if ((*arr)[yy][xx] == '#')
+                    {
+                        dir = 0;
+                        xx++;
+                    }
+                    else
+                    {
+                        add_pos(xx, yy);
+                        xx--;
+                    }
+                    break;
+                }
+
+            } while (cont);
+
+            return 0;
+        };
+
+        int x_start = x, y_start = y;
+
+        add_pos(x_start, y_start);
+
+        walk(&mx, max_x, max_y, x_start, y_start);
+
+        printf("DAY 6 (a): %d\n", vis_ln);
+
+        int day_6_b = 0;
+
+        // #pragma omp parallel for
+        for (int r = 0; r < max_y; r++)
+        {
+            for (int c = 0; c < max_x; c++)
+            {
+                // char mmx[max_x][max_y];
+                // memcpy(&mmx[0][0], &mx[0][0], max_x * max_y * sizeof(mx[0][0]));
+
+                char o = mx[r][c];
+                if (o == '#' || (r == y_start && c == x_start))
+                    continue;
+
+                mx[r][c] = '#';
+
+                int v = walk(&mx, max_x, max_y, x_start, y_start);
+                if (v == -1)
+                    atomic_fetch_add(&day_6_b, 1);
+
+                mx[r][c] = o;
+            }
+        }
+
+        printf("DAY 6 (b): %d\n", day_6_b);
     }
 
     return 0;
