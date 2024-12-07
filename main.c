@@ -1,10 +1,10 @@
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <omp.h>
-#include <stdatomic.h>
+#include <stdint.h>
+#include <inttypes.h>
 
 #define array_len(a) ((&a)[1] - a)
 
@@ -49,12 +49,106 @@ int numbers(char *line, int *v, int arrsz)
     return c;
 }
 
+void combinations(int *arr, int n, int pos, int concat, void *ctx, void (*test)(void *, int *, int))
+{
+    if (pos == n)
+    {
+        test(ctx, arr, n);
+        return;
+    }
+
+    arr[pos] = '+';
+    combinations(arr, n, pos + 1, concat, ctx, test);
+
+    arr[pos] = '*';
+    combinations(arr, n, pos + 1, concat, ctx, test);
+
+    if (concat)
+    {
+        arr[pos] = '|';
+        combinations(arr, n, pos + 1, concat, ctx, test);
+    }
+}
+
 void print_arr(int *v, int ln)
 {
     printf("%d: ", ln);
     for (int i = 0; i < ln; i++)
         printf("%d ", v[i]);
     printf("\n");
+}
+
+void print_arr_char(int *v, int ln)
+{
+    printf(" ");
+    for (int i = 0; i < ln; i++)
+        printf("%c ", v[i]);
+    printf("\n");
+}
+
+int64_t combine_numbers(int64_t a, int64_t b)
+{
+    char r[128];
+    snprintf(r, sizeof(r), "%" PRId64 "%" PRId64, a, b);
+    return strtoll(r, 0, 10);
+}
+
+int64_t solve(int *n, int *o, int l, int prec, int concat)
+{
+    int64_t r = 0;
+
+    if (prec)
+    {
+        for (int i = 0; i < l - 1; i++)
+        {
+            if (o[i] == '*')
+            {
+                n[i + 1] = n[i] * n[i + 1];
+                n[i] = 0;
+            }
+        }
+
+        for (int i = 0; i < l; i++)
+        {
+            r += n[i];
+        }
+    }
+    else if (concat)
+    {
+        r = n[0];
+        for (int i = 0; i < l - 1; i++)
+        {
+            if (o[i] == '+')
+            {
+                r += n[i + 1];
+            }
+            else if (o[i] == '*')
+            {
+                r *= n[i + 1];
+            }
+            else if (o[i] == '|')
+            {
+                r = combine_numbers(r, n[i + 1]);
+            }
+        }
+    }
+    else
+    {
+        r = n[0];
+        for (int i = 0; i < l - 1; i++)
+        {
+            if (o[i] == '+')
+            {
+                r += n[i + 1];
+            }
+            else if (o[i] == '*')
+            {
+                r *= n[i + 1];
+            }
+        }
+    }
+
+    return r;
 }
 
 int unsafe(int *v, int arrsz)
@@ -77,27 +171,6 @@ int unsafe(int *v, int arrsz)
     }
 
     return -1;
-}
-
-int search_pattern2(const char *a, int asz, const char *pt, int ptsz)
-{
-    int count = 0;
-    const char *ptr = a;
-    const char *end = ptr + asz;
-
-    if (asz < ptsz)
-        return 0;
-
-    while (ptr < end)
-    {
-        const char *found = memmem(ptr, end - ptr, pt, ptsz);
-        if (!found)
-            break;
-        count++;
-        ptr = found + ptsz;
-    }
-
-    return count;
 }
 
 int search_pattern(const char *a, int asz, const char *pt, int ptsz)
@@ -801,14 +874,11 @@ int main(int argc, char **argv)
 
         int day_6_b = 0;
 
-        // #pragma omp parallel for
+#pragma omp parallel for firstprivate(mx) reduction(+ : day_6_b)
         for (int r = 0; r < max_y; r++)
         {
             for (int c = 0; c < max_x; c++)
             {
-                // char mmx[max_x][max_y];
-                // memcpy(&mmx[0][0], &mx[0][0], max_x * max_y * sizeof(mx[0][0]));
-
                 char o = mx[r][c];
                 if (o == '#' || (r == y_start && c == x_start))
                     continue;
@@ -817,13 +887,72 @@ int main(int argc, char **argv)
 
                 int v = walk(&mx, max_x, max_y, x_start, y_start);
                 if (v == -1)
-                    atomic_fetch_add(&day_6_b, 1);
+                    day_6_b += 1;
 
                 mx[r][c] = o;
             }
         }
 
         printf("DAY 6 (b): %d\n", day_6_b);
+    }
+
+    /* day 7 */
+    {
+        char line[256], *p, *e;
+        int arr[32], c = 0, i = 0;
+        int64_t day_7_a = 0, day_7_b = 0;
+
+        struct day7
+        {
+            int64_t s;
+            int *a;
+            int al;
+
+            int set;
+            int concat;
+        };
+
+        void test(void *ctx, int *a, int al)
+        {
+            struct day7 *c = ctx;
+
+            int a_copy[c->al];
+            memcpy(a_copy, c->a, c->al * sizeof(int));
+
+            int64_t r = solve(a_copy, a, c->al, 0, c->concat);
+
+            if (r == c->s && !c->set)
+                c->set = 1;
+        };
+
+        file = fopen("input_d7t.txt", "r");
+        while (fgets(line, sizeof(line), file))
+        {
+            int64_t s = strtoll(line, &e, 10);
+            c = numbers(e + 2, arr, array_len(arr));
+
+            int op[c - 1];
+            struct day7 ctx = {.s = s, .a = arr, .al = c, .set = 0, .concat = 0};
+            combinations(op, c - 1, 0, ctx.concat, &ctx, test);
+
+            if (ctx.set)
+            {
+                day_7_a += s;
+            }
+            else
+            {
+                struct day7 ctx_b = {.s = s, .a = arr, .al = c, .set = 0, .concat = 1};
+                combinations(op, c - 1, 0, ctx_b.concat, &ctx_b, test);
+
+                if (ctx_b.set)
+                    day_7_b += s;
+            }
+            i++;
+        }
+        fclose(file);
+
+        printf("DAY 7 (a): %" PRId64 "\n", day_7_a);
+        printf("DAY 7 (b): %" PRId64 "\n", day_7_a + day_7_b);
     }
 
     return 0;
