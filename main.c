@@ -86,6 +86,19 @@ void print_arr_char(int *v, int ln)
     printf("\n");
 }
 
+#define print_arr2d(_arr, _sz)           \
+    for (int _i = 0; _i < _sz; _i++)     \
+    {                                    \
+        for (int _j = 0; _j < _sz; _j++) \
+            printf("%c ", _arr[_i][_j]); \
+        printf("\n");                    \
+    }
+
+#define copy_arr2d(_arr, _sz, _arrc, _pp) \
+    for (int _i = 0; _i < _sz; _i++)      \
+        for (int _j = 0; _j < _sz; _j++)  \
+            _arrc[_i][_j] = _pp ? _pp : _arr[_i][_j];
+
 int64_t combine_numbers(int64_t a, int64_t b)
 {
     char r[128];
@@ -899,7 +912,7 @@ int main(int argc, char **argv)
     /* day 7 */
     {
         char line[256], *p, *e;
-        int arr[32], c = 0, i = 0;
+        int arr[32], c = 0;
         int64_t day_7_a = 0, day_7_b = 0;
 
         struct day7
@@ -947,7 +960,6 @@ int main(int argc, char **argv)
                 if (ctx_b.set)
                     day_7_b += s;
             }
-            i++;
         }
         fclose(file);
 
@@ -955,5 +967,158 @@ int main(int argc, char **argv)
         printf("DAY 7 (b): %" PRId64 "\n", day_7_a + day_7_b);
     }
 
+    /* day 8 */
+    {
+#define day8asz 50
+        int mx[day8asz][day8asz], mx_sz = 0, mxc = 0, c;
+        file = fopen("input_d8t.txt", "r");
+        while ((c = fgetc(file)) != EOF)
+        {
+            if (c == '\n' || c == '\r')
+            {
+                mx_sz++;
+                mxc = 0;
+            }
+            else
+            {
+                int bytes;
+                if ((c & 0x80) == 0)
+                {
+                    bytes = 1;
+                }
+                else if ((c & 0xE0) == 0xC0)
+                {
+                    bytes = 2;
+                }
+                else if ((c & 0xF0) == 0xE0)
+                {
+                    bytes = 3;
+                }
+                else if ((c & 0xF8) == 0xF0)
+                {
+                    bytes = 4;
+                }
+                else
+                {
+                    continue;
+                }
+
+                int ch = c;
+                for (int i = 1; i < bytes; i++)
+                {
+                    c = fgetc(file);
+                    if (c == EOF)
+                        break;
+                    ch = (ch << 8) | c;
+                }
+
+                mx[mx_sz][mxc++] = ch;
+            }
+        }
+
+        if (mx_sz)
+            mx_sz++;
+
+        fclose(file);
+
+        int mxres[day8asz][day8asz];
+        copy_arr2d(mx, mx_sz, mxres, '.');
+
+        int find(int(*arr)[day8asz][day8asz], int asz, int cr, int cc, int sym)
+        {
+            for (int ii = cr; ii < asz; ii++)
+            {
+                for (int jj = 0; jj < asz; jj++)
+                {
+                    int dys = cr - ii;
+                    int dy = abs(dys);
+                    int dxs = cc - jj;
+                    int dx = abs(dxs);
+
+                    if (!(dx < 1 && dy < 1) && (*arr)[ii][jj] == sym)
+                    {
+                        int a_x_1 = jj + dx * (dxs < 0 ? -2 : 2);
+                        int a_y_1 = ii + dy * (dys < 0 ? -2 : 2);
+
+                        int a_x_2 = jj - dx * (dxs < 0 ? -1 : 1);
+                        int a_y_2 = ii - dy * (dys < 0 ? -1 : 1);
+
+                        if (a_x_1 >= 0 && a_x_1 < asz && a_y_1 >= 0 && a_y_1 < asz)
+                        {
+                            mxres[a_y_1][a_x_1] = '#';
+                        }
+                        if (a_x_2 >= 0 && a_x_2 < asz && a_y_2 >= 0 && a_y_2 < asz)
+                        {
+                            mxres[a_y_2][a_x_2] = '#';
+                        }
+                    }
+                }
+            }
+        };
+
+        for (int i = 0; i < mx_sz; i++)
+            for (int j = 0; j < mx_sz; j++)
+                if (mx[i][j] != '.')
+                    find(&mx, mx_sz, i, j, mx[i][j]);
+
+        print_arr2d(mxres, mx_sz);
+
+        int day_8_a = 0;
+        for (int i = 0; i < mx_sz; i++)
+            for (int j = 0; j < mx_sz; j++)
+                if (mxres[i][j] == '#')
+                    day_8_a++;
+
+        printf("DAY 8 (a): %d\n", day_8_a);
+
+        int mxres2[day8asz][day8asz];
+        copy_arr2d(mx, mx_sz, mxres2, '.');
+
+        int find2(int(*arr)[day8asz][day8asz], int asz, int cr, int cc, int sym)
+        {
+            for (int ii = cr; ii < asz; ii++)
+            {
+                for (int jj = 0; jj < asz; jj++)
+                {
+                    int dys = cr - ii;
+                    int dy = abs(dys);
+                    int dxs = cc - jj;
+                    int dx = abs(dxs);
+
+                    if (!(dx < 1 && dy < 1) && (*arr)[ii][jj] == sym)
+                    {
+                        for (int k = -asz; k < asz; k++)
+                        {
+                            int a_x_2 = jj + dxs * k;
+                            int a_y_2 = ii + dys * k;
+
+                            if (a_x_2 >= 0 && a_x_2 < asz && a_y_2 >= 0 && a_y_2 < asz)
+                            {
+                                mxres2[a_y_2][a_x_2] = '#';
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        for (int i = 0; i < mx_sz; i++)
+            for (int j = 0; j < mx_sz; j++)
+                if (mx[i][j] != '.')
+                    find2(&mx, mx_sz, i, j, mx[i][j]);
+
+        print_arr2d(mxres2, mx_sz);
+
+        int day_8_b = 0;
+        for (int i = 0; i < mx_sz; i++)
+            for (int j = 0; j < mx_sz; j++)
+                if (mxres2[i][j] == '#')
+                    day_8_b++;
+
+        printf("DAY 8 (b): %d\n", day_8_b);
+    }
+
     return 0;
 }
+
+// cc -g -o t main.c -fopenmp -std=gnu2x
