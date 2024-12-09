@@ -1118,6 +1118,169 @@ int main(int argc, char **argv)
         printf("DAY 8 (b): %d\n", day_8_b);
     }
 
+    /* day 9 */
+
+    {
+        struct day9
+        {
+            int l;
+            int ol;
+            int f;
+            int i;
+        } fmap[10000];
+        int dmap[99999];
+
+        int files = 0, c, i = 0, fid = 0;
+
+        file = fopen("input_d9t.txt", "r");
+        while ((c = fgetc(file)) != EOF)
+        {
+            int d = c - '0';
+            struct day9 *e = &fmap[files];
+            switch (i++ % 2)
+            {
+            case 0:
+                e->ol = e->l = d;
+                break;
+            case 1:
+                e->f = d;
+                e->i = fid++;
+                files++;
+                i = 0;
+                break;
+            }
+        }
+        fclose(file);
+
+        if (i == 1)
+        {
+            fmap[files].f = 0;
+            fmap[files++].i = fid++;
+        }
+
+#define eoff 48
+        int dmap_sz = 0;
+        for (int i = 0; i < files; i++)
+        {
+            for (int v = 0; v < fmap[i].l; v++)
+                dmap[dmap_sz++] = eoff + fmap[i].i;
+            for (int v = 0; v < fmap[i].f; v++)
+                dmap[dmap_sz++] = '.';
+        }
+
+        int dmap_b[99999];
+        memcpy(dmap_b, dmap, sizeof(dmap));
+
+        for (int a = 0; a < dmap_sz; a++)
+        {
+            if (dmap[a] == '.')
+            {
+                for (int b = dmap_sz - 1; b >= a; b--)
+                {
+                    if (dmap[b] != '.')
+                    {
+                        dmap[a] = dmap[b];
+                        dmap[b] = '.';
+                        break;
+                    }
+                }
+            }
+        }
+
+        int64_t day_9_a = 0;
+        for (int i = 0; i < dmap_sz; i++)
+        {
+            if (dmap[i] != '.')
+                day_9_a += i * (dmap[i] - eoff);
+        }
+
+        printf("DAY 9 (a): %" PRId64 "\n", day_9_a);
+
+        struct day9 *get(int fid)
+        {
+            for (int a = 0; a < files; a++)
+            {
+                if (fmap[a].i == fid)
+                    return &fmap[a];
+            }
+            return 0;
+        };
+
+        int getpos(int fid)
+        {
+            for (int a = 0; a < dmap_sz; a++)
+                if (dmap_b[a] == fid)
+                    return a;
+            return -1;
+        };
+
+#define printmap()                    \
+    for (int i = 0; i < dmap_sz; i++) \
+        printf("%c", dmap_b[i]);      \
+    printf("\n");
+
+        int last_file_idx = fmap[files - 1].i;
+        int aa = 0;
+
+        while (last_file_idx >= 0)
+        {
+            struct day9 *cb = get(last_file_idx);
+
+            for (int a = 0; a < files; a++)
+            {
+                struct day9 *ca = &fmap[a];
+                if (cb->i == ca->i)
+                    break;
+
+                if (ca->f >= cb->l)
+                {
+                    int f = cb->l;
+
+                    int ap = getpos(ca->i + eoff) + ca->l;
+                    int bp = getpos(cb->i + eoff);
+
+                    while (f-- > 0)
+                    {
+                        dmap_b[ap++] = dmap_b[bp];
+                        dmap_b[bp++] = '.';
+                        ca->f--;
+                        ca->l++;
+                    }
+
+                    break;
+                }
+                else if (ca->f >= cb->ol)
+                {
+                    int f = cb->ol;
+
+                    int ap = getpos(ca->i + eoff) + ca->l;
+                    int bp = getpos(cb->i + eoff);
+
+                    while (f-- > 0)
+                    {
+                        dmap_b[ap++] = dmap_b[bp];
+                        dmap_b[bp++] = '.';
+                        ca->f--;
+                        ca->l++;
+                    }
+
+                    break;
+                }
+            }
+
+            last_file_idx--;
+        }
+
+        int64_t day_9_b = 0;
+        for (int i = 0; i < dmap_sz; i++)
+        {
+            if (dmap_b[i] != '.')
+                day_9_b += i * (dmap_b[i] - eoff);
+        }
+
+        printf("DAY 9 (b): %" PRId64 "\n", day_9_b);
+    }
+
     return 0;
 }
 
