@@ -72,7 +72,6 @@ void combinations(int *arr, int n, int pos, int concat, void *ctx, void (*test)(
 
 void print_arr(int *v, int ln)
 {
-    printf("%d: ", ln);
     for (int i = 0; i < ln; i++)
         printf("%d ", v[i]);
     printf("\n");
@@ -85,6 +84,14 @@ void print_arr_char(int *v, int ln)
         printf("%c ", v[i]);
     printf("\n");
 }
+
+#define print_arr2di(_arr, _sz)          \
+    for (int _i = 0; _i < _sz; _i++)     \
+    {                                    \
+        for (int _j = 0; _j < _sz; _j++) \
+            printf("%d ", _arr[_i][_j]); \
+        printf("\n");                    \
+    }
 
 #define print_arr2d(_arr, _sz)           \
     for (int _i = 0; _i < _sz; _i++)     \
@@ -1220,7 +1227,6 @@ int main(int argc, char **argv)
     printf("\n");
 
         int last_file_idx = fmap[files - 1].i;
-        int aa = 0;
 
         while (last_file_idx >= 0)
         {
@@ -1279,6 +1285,134 @@ int main(int argc, char **argv)
         }
 
         printf("DAY 9 (b): %" PRId64 "\n", day_9_b);
+    }
+
+    /* day 10 */
+    {
+#define day10max 45
+        int dx[] = {-1, 1, 0, 0};
+        int dy[] = {0, 0, -1, 1};
+
+        int grid[day10max][day10max], grid_sz = 0, gc = 0, c;
+
+        file = fopen("input_d10.txt", "r");
+        while ((c = fgetc(file)) != EOF)
+        {
+            if (c == '\n')
+            {
+                grid_sz++;
+                gc = 0;
+            }
+            else
+            {
+                grid[grid_sz][gc++] = c - '0';
+            }
+        }
+        fclose(file);
+        grid_sz++;
+
+        int visited[grid_sz][grid_sz];
+        memset(visited, 0, grid_sz * grid_sz * sizeof(int));
+        int path[grid_sz * grid_sz][2];
+        int day_10_a = 0, day_10_b = 0;
+
+#define MAX_HASH_SZ 10000
+        unsigned long hash9[MAX_HASH_SZ];
+
+        void printpath(int pathLen)
+        {
+            for (int i = 0; i < pathLen; i++)
+                printf("(%d, %d) ", path[i][0], path[i][1]);
+            printf("\n");
+        };
+
+        unsigned long hashf(int a, int b)
+        {
+            unsigned long hash = 5381;
+            hash = ((hash << 5) + hash) + a;
+            hash = ((hash << 5) + hash) + b;
+            return hash;
+        };
+
+        int is9unique(int x, int y)
+        {
+            unsigned long h9 = hashf(x, y) % MAX_HASH_SZ;
+            if (hash9[h9])
+                return 0;
+            hash9[h9] = 1;
+            return 1;
+        };
+
+        void find(int x, int y, int pathLen, int day10a)
+        {
+            if (grid[x][y] == 9)
+            {
+                if (day10a)
+                {
+                    int u9 = is9unique(x, y);
+                    if (!u9)
+                        return;
+                    day_10_a++;
+                }
+                else
+                {
+                    day_10_b++;
+                }
+                return;
+            }
+
+            visited[x][y] = 1;
+
+            for (int i = 0; i < 4; i++)
+            {
+                int newX = x + dx[i];
+                int newY = y + dy[i];
+
+                if (newX >= 0 && newX < grid_sz && newY >= 0 && newY < grid_sz && !visited[newX][newY])
+                {
+                    if (grid[newX][newY] == grid[x][y] + 1)
+                    {
+                        path[pathLen][0] = newX;
+                        path[pathLen][1] = newY;
+                        find(newX, newY, pathLen + 1, day10a);
+                    }
+                }
+            }
+
+            visited[x][y] = 0;
+        };
+
+        for (int i = 0; i < grid_sz; i++)
+        {
+            for (int j = 0; j < grid_sz; j++)
+            {
+                if (grid[i][j] == 0)
+                {
+                    memset(hash9, 0, sizeof(hash9));
+                    path[0][0] = i;
+                    path[0][1] = j;
+                    find(i, j, 1, 1);
+                }
+            }
+        }
+
+        printf("DAY 10 (a): %d\n", day_10_a);
+
+        for (int i = 0; i < grid_sz; i++)
+        {
+            for (int j = 0; j < grid_sz; j++)
+            {
+                if (grid[i][j] == 0)
+                {
+                    memset(hash9, 0, sizeof(hash9));
+                    path[0][0] = i;
+                    path[0][1] = j;
+                    find(i, j, 1, 0);
+                }
+            }
+        }
+
+        printf("DAY 10 (b): %d\n", day_10_b);
     }
 
     return 0;
