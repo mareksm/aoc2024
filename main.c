@@ -5,6 +5,8 @@
 #include <omp.h>
 #include <stdint.h>
 #include <inttypes.h>
+#include <limits.h>
+#include <math.h>
 
 #define array_len(a) ((&a)[1] - a)
 
@@ -111,6 +113,47 @@ int64_t combine_numbers(int64_t a, int64_t b)
     char r[128];
     snprintf(r, sizeof(r), "%" PRId64 "%" PRId64, a, b);
     return strtoll(r, 0, 10);
+}
+
+void split(unsigned dig, uint64_t number, uint64_t *left, uint64_t *right)
+{
+    unsigned size = dig / 2;
+
+    unsigned long long divisor = 1;
+    for (int i = 0; i < size; i++)
+    {
+        divisor *= 10;
+    }
+
+    *left = number / divisor;
+    *right = number % divisor;
+}
+
+unsigned digits(uint64_t number)
+{
+    static uint8_t maxdigits[] = {
+        1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 6, 6, 6,
+        7, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11,
+        12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 15, 15, 15,
+        16, 16, 16, 16, 17, 17, 17, 18, 18, 18, 19, 19, 19, 19, 20};
+
+    static uint64_t powers[] = {
+        0U, 1U, 10U, 100U, 1000U, 10000U, 100000U, 1000000U, 10000000U,
+        100000000U, 1000000000U, 10000000000U, 100000000000U,
+        1000000000000U, 10000000000000U, 100000000000000U,
+        1000000000000000U, 10000000000000000U, 100000000000000000U,
+        1000000000000000000U, 10000000000000000000U};
+
+    if (number < 10)
+        return 1;
+
+    unsigned bits = sizeof(number) * CHAR_BIT - __builtin_clzll(number);
+    unsigned digits = maxdigits[bits];
+
+    if (number < powers[digits])
+        --digits;
+
+    return digits;
 }
 
 int64_t solve(int *n, int *o, int l, int prec, int concat)
@@ -237,13 +280,15 @@ int search_pattern3(int row, int col, int n, char c[][n])
 
 int main(int argc, char **argv)
 {
+    FILE *file;
+#ifdef DAY1
     /* day 1 */
 
 #define arr_len 1000
     int left[arr_len], right[arr_len];
     int i = 0;
 
-    FILE *file = fopen("input.txt", "r");
+    file = fopen("input.txt", "r");
     while (fscanf(file, "%d %d", &left[i], &right[i]) == 2)
     {
         i++;
@@ -266,7 +311,9 @@ int main(int argc, char **argv)
         day_1_b += left[i] * count_occurances(right, arr_len, left[i]);
 
     printf("DAY 1 (b): %d\n", day_1_b);
+#endif
 
+#ifdef DAY2
     /* day 2 */
 
     char line[256];
@@ -317,7 +364,9 @@ int main(int argc, char **argv)
     fclose(file);
 
     printf("DAY 2 (b): %d\n", safe_level);
+#endif
 
+#ifdef DAY3
     /* day 3 */
 
     {
@@ -509,7 +558,9 @@ int main(int argc, char **argv)
         fclose(file);
         printf("DAY 3 (b): %d\n", day_3_b);
     }
+#endif
 
+#ifdef DAY4
     /* day 4 */
 
     {
@@ -619,7 +670,9 @@ int main(int argc, char **argv)
 
         printf("DAY 4 (b): %d\n", day_4_b);
     }
+#endif
 
+#ifdef DAY5
     /* day 5 */
     {
         char line[256];
@@ -749,11 +802,12 @@ int main(int argc, char **argv)
         printf("DAY 5 (a): %d\n", day_5_a);
         printf("DAY 5 (b): %d\n", day_5_b);
     }
+#endif
 
+#ifdef DAY6
     /* day 6 */
     {
-        char line[256], *p;
-        int i = 0, obstcount = 0;
+        cccc int i = 0, obstcount = 0;
 #define guard_map_sz 130
         char mx[guard_map_sz][guard_map_sz];
         int x = 0, y = 0; /* col , row */
@@ -915,7 +969,9 @@ int main(int argc, char **argv)
 
         printf("DAY 6 (b): %d\n", day_6_b);
     }
+#endif
 
+#ifdef DAY7
     /* day 7 */
     {
         char line[256], *p, *e;
@@ -973,7 +1029,9 @@ int main(int argc, char **argv)
         printf("DAY 7 (a): %" PRId64 "\n", day_7_a);
         printf("DAY 7 (b): %" PRId64 "\n", day_7_a + day_7_b);
     }
+#endif
 
+#ifdef DAY8
     /* day 8 */
     {
 #define day8asz 50
@@ -1124,7 +1182,9 @@ int main(int argc, char **argv)
 
         printf("DAY 8 (b): %d\n", day_8_b);
     }
+#endif
 
+#ifdef DAY9
     /* day 9 */
 
     {
@@ -1286,7 +1346,9 @@ int main(int argc, char **argv)
 
         printf("DAY 9 (b): %" PRId64 "\n", day_9_b);
     }
+#endif
 
+#ifdef DAY10
     /* day 10 */
     {
 #define day10max 45
@@ -1414,7 +1476,83 @@ int main(int argc, char **argv)
 
         printf("DAY 10 (b): %d\n", day_10_b);
     }
+#endif
 
+#ifdef DAY11
+    /* day 11 */
+
+    {
+        char line[256];
+        int arr[32], arr_sz = 0;
+        file = fopen("input_d11.txt", "r");
+        while (fgets(line, sizeof(line), file))
+        {
+            arr_sz = numbers(line, arr, array_len(arr));
+        }
+        fclose(file);
+
+#define cachesz 200000
+        struct cache
+        {
+            uint64_t x, r;
+            int n;
+        } cache[cachesz];
+        int cache_sz = 0;
+
+        uint64_t count(uint64_t x, int n)
+        {
+            uint64_t r;
+            int incache = -1;
+            if (!n)
+                return 1;
+            for (int i = 0; i < cache_sz; i++)
+            {
+                if (cache[i].x == x && cache[i].n == n)
+                {
+                    incache = i;
+                    break;
+                }
+            }
+            if (incache == -1)
+            {
+                unsigned d = digits(x);
+                if (x == 0)
+                {
+                    r = count(1, n - 1);
+                }
+                else if (!(d % 2))
+                {
+                    uint64_t rn, ln;
+                    split(d, x, &ln, &rn);
+                    r = count(ln, n - 1);
+                    r += count(rn, n - 1);
+                }
+                else
+                {
+                    r = count(x * 2024, n - 1);
+                }
+
+                cache[cache_sz].x = x;
+                cache[cache_sz].n = n;
+                cache[cache_sz++].r = r;
+                return r;
+            }
+
+            return cache[incache].r;
+        };
+
+        uint64_t day_11_a = 0, day_11_b = 0;
+
+        for (int i = 0; i < arr_sz; i++)
+            day_11_a += count(arr[i], 25);
+
+        for (int i = 0; i < arr_sz; i++)
+            day_11_b += count(arr[i], 75);
+
+        printf("DAY 11 (a): %" PRIu64 "\n", day_11_a);
+        printf("DAY 11 (b): %" PRIu64 "\n", day_11_b);
+    }
+#endif
     return 0;
 }
 
