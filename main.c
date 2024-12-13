@@ -1583,9 +1583,25 @@ int main(int argc, char **argv)
     /* day 13 */
 
     /*
-    system of 2 linear equations: a, b = button presses for a, b
-      a*ax + b*bx = px
-      a*ay + b*by = py
+        system of 2 linear equations: a, b = button presses for a, b
+          a*ax + b*bx = px
+          a*ay + b*by = py
+
+    \begin{bmatrix}
+    ax & bx \\
+    ay & by
+    \end{bmatrix}
+    \begin{bmatrix}
+    a \\
+    b
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+    px \\
+    py
+    \end{bmatrix}
+
+
     */
 
     void solve(FILE * file, int64_t * day_13, int64_t x_offset, int64_t y_offset)
@@ -1595,8 +1611,10 @@ int main(int argc, char **argv)
         {
             px += x_offset;
             py += y_offset;
-            b = (py * ax - px * ay) / ((-ay) * bx + by * ax);
-            a = (px - bx * b) / ax;
+
+            a = (by * px - bx * py) / (ax * by - bx * ay);
+            b = ((-ay) * px + ax * py) / (ax * by - bx * ay);
+
             if (a * ax + b * bx == px && a * ay + b * by == py)
             {
                 *day_13 += a * 3 + b;
