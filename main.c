@@ -7,8 +7,30 @@
 #include <inttypes.h>
 #include <limits.h>
 #include <math.h>
+#include <sys/resource.h>
 
 #define array_len(a) ((&a)[1] - a)
+
+void setstack()
+{
+    const rlim_t kStackSize = 16 * 1024 * 1024;
+    struct rlimit rl;
+    int result;
+
+    result = getrlimit(RLIMIT_STACK, &rl);
+    if (result == 0)
+    {
+        if (rl.rlim_cur < kStackSize)
+        {
+            rl.rlim_cur = kStackSize;
+            result = setrlimit(RLIMIT_STACK, &rl);
+            if (result != 0)
+            {
+                fprintf(stderr, "setrlimit returned result = %d\n", result);
+            }
+        }
+    }
+}
 
 int compare(const void *a, const void *b)
 {
@@ -281,6 +303,9 @@ int search_pattern3(int row, int col, int n, char c[][n])
 int main(int argc, char **argv)
 {
     FILE *file;
+
+    setstack();
+
 #ifdef DAY1
     /* day 1 */
 
@@ -1551,6 +1576,46 @@ int main(int argc, char **argv)
 
         printf("DAY 11 (a): %" PRIu64 "\n", day_11_a);
         printf("DAY 11 (b): %" PRIu64 "\n", day_11_b);
+    }
+#endif
+
+#ifdef DAY13
+    /* day 13 */
+
+    /*
+    system of 2 linear equations: a, b = button presses for a, b
+      a*ax + b*bx = px
+      a*ay + b*by = py
+    */
+
+    void solve(FILE * file, int64_t * day_13, int64_t x_offset, int64_t y_offset)
+    {
+        int64_t ax, bx, ay, by, px, py, a, b;
+        while (fscanf(file, " Button A: X+%" SCNi64 ", Y+%" SCNi64 " Button B: X+%" SCNi64 ", Y+%" SCNi64 " Prize: X=%" SCNi64 ", Y=%" SCNi64 "", &ax, &ay, &bx, &by, &px, &py) == 6)
+        {
+            px += x_offset;
+            py += y_offset;
+            b = (py * ax - px * ay) / ((-ay) * bx + by * ax);
+            a = (px - bx * b) / ax;
+            if (a * ax + b * bx == px && a * ay + b * by == py)
+            {
+                *day_13 += a * 3 + b;
+            }
+        }
+    };
+
+    {
+        int64_t day_13_a = 0, day_13_b = 0;
+        file = fopen("input_d13.txt", "r");
+
+        solve(file, &day_13_a, 0, 0);
+        printf("DAY 13 (a): %" PRIi64 "\n", day_13_a);
+
+        rewind(file);
+        solve(file, &day_13_b, 10000000000000, 10000000000000);
+        printf("DAY 13 (b): %" PRIi64 "\n", day_13_b);
+
+        fclose(file);
     }
 #endif
     return 0;
