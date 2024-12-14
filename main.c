@@ -1583,31 +1583,34 @@ int main(int argc, char **argv)
     /* day 13 */
 
     /*
-        system of 2 linear equations: a, b = button presses for a, b
-          a*ax + b*bx = px
-          a*ay + b*by = py
 
-    \begin{bmatrix}
-    ax & bx \\
-    ay & by
-    \end{bmatrix}
-    \begin{bmatrix}
-    a \\
-    b
-    \end{bmatrix}
-    =
-    \begin{bmatrix}
-    px \\
-    py
-    \end{bmatrix}
+    \begin{bmatrix} ax & bx \\ ay & by \end{bmatrix} \begin{bmatrix} a \\ b \end{bmatrix} = \begin{bmatrix} px \\ py \end{bmatrix}
 
+    \begin{bmatrix} a \\ b \end{bmatrix} = \begin{bmatrix} ax & bx \\ ay & by \end{bmatrix}^{-1} \begin{bmatrix} px \\ py \end{bmatrix
+
+    M^{-1} = \frac{1}{\text{det}(M)}  \begin{bmatrix} m_{22} & -m_{12} \\ -m_{21} & m_{11} \end{bmatrix}
+    \text{det}(M) = m_{11} m_{22} - m_{12} m_{21} 
+
+    M = \begin{bmatrix} ax & bx \\ ay & by \end{bmatrix}
+    {det}(M) = (ax \cdot by) - (bx \cdot ay)
+
+    M^{-1} = \frac{1}{\text{det}(M)}  \begin{bmatrix} by & -bx \\ -ay & ax \end{bmatrix}
+
+    \mathbf{x} = M^{-1} \mathbf{y}
+
+    \begin{bmatrix} a \\ b \end{bmatrix} = \frac{1}{ax \cdot by - bx \cdot ay} \begin{bmatrix} by & -bx \\ -ay & ax \end{bmatrix} \begin{bmatrix} px \\ py \end{bmatrix}
+
+    \begin{bmatrix} a \\ b \end{bmatrix} = \frac{1}{ax \cdot by - bx \cdot ay} \begin{bmatrix} (by \cdot px - bx \cdot py) \\ (-ay \cdot px + ax \cdot py) \end{bmatrix}
+
+    a = \frac{by \cdot px - bx \cdot py}{ax \cdot by - bx \cdot ay}, b = \frac{-ay \cdot px + ax \cdot py}{ax \cdot by - bx \cdot ay}. 
 
     */
 
     void solve(FILE * file, int64_t * day_13, int64_t x_offset, int64_t y_offset)
     {
-        int64_t ax, bx, ay, by, px, py, a, b;
-        while (fscanf(file, " Button A: X+%" SCNi64 ", Y+%" SCNi64 " Button B: X+%" SCNi64 ", Y+%" SCNi64 " Prize: X=%" SCNi64 ", Y=%" SCNi64 "", &ax, &ay, &bx, &by, &px, &py) == 6)
+        int ax, bx, ay, by;
+        int64_t px, py, a, b;
+        while (fscanf(file, "Button A: X+%d, Y+%d Button B: X+%d, Y+%d Prize: X=%" SCNi64 ", Y=%" SCNi64 " ", &ax, &ay, &bx, &by, &px, &py) == 6)
         {
             px += x_offset;
             py += y_offset;
