@@ -41,9 +41,9 @@ int main()
     ifstream file("input_d22.txt");
     string line;
 
-    size_t day_21_a = 0, day_21_b = 0;
+    size_t day_22_a = 0, day_22_b = 0;
     vector<size_t> nums;
-    unordered_map<tuple<int, int, int, int>, size_t, TupleHash> day_21_b_values;
+    unordered_map<tuple<int, int, int, int>, size_t, TupleHash> day_22_b_values;
 
     while (getline(file, line))
     {
@@ -57,7 +57,7 @@ int main()
             n = step(n);
             nums.push_back(n);
             if (i == num_of_secrets - 1)
-                day_21_a += n;
+                day_22_a += n;
         }
 
         vector<int> diffs(nums.size() - 1);
@@ -72,18 +72,18 @@ int main()
             auto pattern = make_tuple(diffs[i], diffs[i + 1], diffs[i + 2], diffs[i + 3]);
             if (seen.insert(pattern).second)
             {
-                day_21_b_values[pattern] += nums[i + 4] % 10;
+                day_22_b_values[pattern] += nums[i + 4] % 10;
             }
         }
     }
 
-    for (const auto &[key, value] : day_21_b_values)
+    for (const auto &[key, value] : day_22_b_values)
     {
-        day_21_b = max(day_21_b, value);
+        day_22_b = max(day_22_b, value);
     }
 
-    cout << "DAY 21 (a): " << day_21_a << "\n";
-    cout << "DAY 21 (b): " << day_21_b << "\n";
+    cout << "DAY 22 (a): " << day_22_a << "\n";
+    cout << "DAY 22 (b): " << day_22_b << "\n";
 
     return 0;
 }
